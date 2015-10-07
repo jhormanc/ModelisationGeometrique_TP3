@@ -34,8 +34,10 @@ GLfloat qaLightPosition[] = { 0, 0, 0, 1 }; // Positional Light
 GLfloat qaLightDirection[] = { 1, 1, 1, 0 }; // Directional Light
 
 const int nb_teapots = 4;
-const float teta = 50.;
+float teta = 50.;
+bool solid = true;
 float rotation_y = 0.;
+float delta_rotation_y = 0.4;
 bool lighting = true;
 bool move = false;
 
@@ -47,17 +49,18 @@ GLvoid window_display();
 GLvoid window_reshape(GLsizei width, GLsizei height); 
 GLvoid window_key(unsigned char key, int x, int y); 
 GLvoid window_idle();
+void printCommandes();
 
 int main(int argc, char **argv) 
-{  
+{ 
+	printCommandes();
   // initialisation  des paramètres de GLUT en fonction
   // des arguments sur la ligne de commande
   glutInit(&argc, argv);
      glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
   // définition et création de la fenêtre graphique
   glutInitWindowSize(WIDTH, HEIGHT);
-  glutInitWindowPosition(0, 0);
+  glutInitWindowPosition(500, 400);
   glutCreateWindow("Primitives graphiques");
 
   // initialisation de OpenGL et de la scène
@@ -170,6 +173,7 @@ GLvoid window_key(unsigned char key, int x, int y)
 		exit(1);
 		break;
 	case 'l':
+	case 'L':
 		lighting = !lighting;
 		if (lighting)
 			glEnable(GL_LIGHTING);
@@ -177,10 +181,39 @@ GLvoid window_key(unsigned char key, int x, int y)
 			glDisable(GL_LIGHTING);
 		break;
 	case 'm':
+	case 'M':
 		move = !move;
+		break;
+	case 'p':
+	case 'P':
+		solid = !solid;
+		break;
+	case 'r':
+	case 'R':
+		move = false;
+		rotation_y = 0.;
+		delta_rotation_y = 0.4;
+		break;
+	case 'i':
+	case 'I':
+		delta_rotation_y -= 0.1;
+		if (delta_rotation_y <= -32.)
+			delta_rotation_y = 0.;
+		break;
+	case 'o':
+	case 'O':
+		delta_rotation_y += 0.1;
+		if (delta_rotation_y >= 32.)
+			delta_rotation_y = 0.;
+		break;
+	case 32: // 'Espace'
+ 		teta += 10.;
+		if (teta >= 360.)
+			teta = 0.;
 		break;
 	default:
 		printf("La touche %d n´est pas active.\n", key);
+		printCommandes();
 		break;
 	}
 }
@@ -188,7 +221,7 @@ GLvoid window_key(unsigned char key, int x, int y)
 GLvoid window_idle() 
 {  
 	if (move)
-		rotation_y += 0.4;
+		rotation_y += delta_rotation_y;
 
 	if (rotation_y > 360.)
 		rotation_y = 0.;
@@ -220,11 +253,19 @@ void render_scene()
 		y = (float)(i + i / 1.9);
 
 		glRotatef(angle, 0., 1., 0.);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, qaWhite);
-		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 10.);
-		glutSolidTeapot(i);
+		if (lighting)
+		{
+			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
+			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, qaWhite);
+			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 10.);
+		}
+		else
+			glColor3f((float)(i / (float)nb), (float)(1. - i / (float)nb), 0.);
+		if (solid)
+			glutSolidTeapot(i);
+		else
+			glutWireTeapot(i);
 		glTranslatef(0., y, 0.);
 	}
 
@@ -249,39 +290,61 @@ void render_scene()
 		glTranslatef(0., y + eps_y, 0.);
 		glRotatef(angle + rotation_y, 0., 1., 0.);
 		glTranslatef(x, 0., 0.);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emitLight);   
-		glutSolidSphere((i - 1.) / (float)(nb + 2.), 25, 25);
-		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Noemit);
+		if (lighting)
+			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emitLight);
+		else
+			glColor3f(1., 1., 1.);
+		if (solid)
+			glutSolidSphere((i - 1.) / (float)(nb + 2.), 25, 25);
+		else
+			glutWireSphere((i - 1.) / (float)(nb + 2.), 25, 25);
+		if (lighting)
+			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Noemit);
 		
 		glPopMatrix();
 
-		glPushMatrix();
-
-		glTranslatef(0., y + eps_y, 0.);
-		glRotatef(angle + rotation_y, 0., 1., 0.);
-		glTranslatef(x, 0., 0.);
-
-		switch (i)
+		if (lighting)
 		{
-		case 5:
-			glLightfv(GL_LIGHT0, GL_POSITION, qaLightPosition);
-			break;
-		case 4:
-			glLightfv(GL_LIGHT1, GL_POSITION, qaLightPosition);
-			break;
-		case 3:
-			glLightfv(GL_LIGHT2, GL_POSITION, qaLightPosition);
-			break;
-		case 2:
-			glLightfv(GL_LIGHT3, GL_POSITION, qaLightPosition);
-			break;
-		default:
-			break;
+			glPushMatrix();
+
+			glTranslatef(0., y + eps_y, 0.);
+			glRotatef(angle + rotation_y, 0., 1., 0.);
+			glTranslatef(x, 0., 0.);
+
+			switch (i)
+			{
+			case 5:
+				glLightfv(GL_LIGHT0, GL_POSITION, qaLightPosition);
+				break;
+			case 4:
+				glLightfv(GL_LIGHT1, GL_POSITION, qaLightPosition);
+				break;
+			case 3:
+				glLightfv(GL_LIGHT2, GL_POSITION, qaLightPosition);
+				break;
+			case 2:
+				glLightfv(GL_LIGHT3, GL_POSITION, qaLightPosition);
+				break;
+			default:
+				break;
+			}
+			glPopMatrix();
 		}
 
 		y += (float)(i + i / 2.5);
-		glPopMatrix();
 	}
 
 	glPopMatrix();
  }
+
+void printCommandes()
+{
+	printf("=== Commandes ===\n\n");
+	printf(" L : activer / desactiver le lighting\n");
+	printf(" M : activer / desactiver la rotation des spheres\n");
+	printf(" I / O : diminuer / augmenter la vitesse de rotation des spheres\n");
+	printf(" R : changer de type d'affichage (Solid / Wire)\n");
+	printf(" Espace : augmenter l'angle de rotation des teapots de 10 degres\n");
+	printf(" R : reset\n");
+	printf(" Echap : quitter\n");
+}

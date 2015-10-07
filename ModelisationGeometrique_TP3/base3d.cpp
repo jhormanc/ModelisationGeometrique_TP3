@@ -115,21 +115,21 @@ GLvoid initGL()
 	glLightfv(GL_LIGHT3, GL_POSITION, qaLightPosition);
 	glLightfv(GL_LIGHT3, GL_SPECULAR, qaSpecularLight);
 
-	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.2f);
+	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.5f);
 	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.f);
-	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.1f);
+	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.01f);
 
-	glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0.4f);
+	glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.f);
 	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.f);
-	glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.2f);
+	glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.02f);
 
-	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, 0.6f);
+	glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION, 1.5f);
 	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION, 0.f);
-	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.3f);
+	glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.03f);
 
-	glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION, 0.8f);
+	glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION, 2.f);
 	glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION, 0.f);
-	glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.4f);
+	glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.04f);
 }
 
 void init_scene()
@@ -202,6 +202,7 @@ void render_scene()
 	const int nb = nb_teapots + 1;
 	float angle = 0.;
 	float y = 0., x = 0.;
+	float eps_y;
 
 	glMatrixMode(GL_MODELVIEW);
 
@@ -215,17 +216,23 @@ void render_scene()
 	glRotatef(20., 0., 0., 1.);
 	for (int i = nb; i > 1; i--)
 	{
-		glRotatef((float)((nb - i) * teta), 0., 1., 0.);
+		angle = (float)((nb - i) * teta);
+		y = (float)(i + i / 1.9);
+
+		glRotatef(angle, 0., 1., 0.);
 		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
 		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. });
 		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, qaWhite);
 		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 10.);
 		glutSolidTeapot(i);
-		glTranslatef(0., (float)(i + i / 1.9), 0.);
+		glTranslatef(0., y, 0.);
 	}
 
 	// Return to previous modelview matrix
 	glPopMatrix();
+
+	angle = 0.;
+	y = 0.;
 
 	glPushMatrix();
 	glTranslatef(2., -8., 0.);
@@ -233,13 +240,15 @@ void render_scene()
 
 	for (int i = nb; i > 1; i--)
 	{
+		eps_y = 2.8 + (i - 2) * 0.2;
 		angle += (float)((nb - i) * teta);
+		x = (float)(i + 2 * i / (float)(nb - 1.));
 
 		glPushMatrix();
 
-		glTranslatef(0., y + 2.8 + (i - 2) * 0.2, 0.);
+		glTranslatef(0., y + eps_y, 0.);
 		glRotatef(angle + rotation_y, 0., 1., 0.);
-		glTranslatef((float)(i + 2 * i / (float)(nb - 1.)), 0., 0.);
+		glTranslatef(x, 0., 0.);
 		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emitLight);   
 		glutSolidSphere((i - 1.) / (float)(nb + 2.), 25, 25);
 		glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, Noemit);
@@ -248,9 +257,10 @@ void render_scene()
 
 		glPushMatrix();
 
-		glTranslatef(0., y + 2.8 + (i - 2) * 0.1, 0.);
+		glTranslatef(0., y + eps_y, 0.);
 		glRotatef(angle + rotation_y, 0., 1., 0.);
-		glTranslatef((float)(i + 2 * i / (float)(nb - 1.)), 0., 0.);
+		glTranslatef(x, 0., 0.);
+
 		switch (i)
 		{
 		case 5:

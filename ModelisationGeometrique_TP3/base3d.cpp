@@ -413,7 +413,7 @@ void printCommandes()
 	printf(" L : activer / desactiver le lighting\n");
 	printf(" M : activer / desactiver la rotation des spheres\n");
 	printf(" I / O : diminuer / augmenter la vitesse de rotation des spheres\n");
-	printf(" R : changer de type d'affichage (Solid / Wire)\n");
+	printf(" P : changer de type d'affichage (Solid / Wire)\n");
 	printf(" K : changer de type d'objet (teapot / sphere)\n");
 	printf(" Espace : augmenter l'angle de rotation des objets de 10 degres\n");
 	printf(" R : reset\n");

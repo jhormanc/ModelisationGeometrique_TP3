@@ -43,6 +43,7 @@ bool lighting = true;
 bool move = false;
 bool spheres = false;
 bool rotation_x = false;
+bool rotation_spheres = false;
 float tabSphere[nb_teapots][6]; // delta x, y, rotation y, sens de rotation, distance et sens planete
 
 // Méthodes
@@ -202,6 +203,12 @@ GLvoid window_key(unsigned char key, int x, int y)
 	case 'M':
 		move = !move;
 		break;
+	case 'b':
+	case 'B':
+		rotation_spheres = !rotation_spheres;
+		if (rotation_spheres == false)
+			rotation_y_sphere = 0.;
+		break;
 	case 'n':
 	case 'N':
 		rotation_x = !rotation_x;
@@ -269,7 +276,8 @@ GLvoid window_idle()
 	if (move)
 	{
 		rotation_y += delta_rotation_y;
-		rotation_y_sphere += delta_rotation_y / 5.f;
+		if (rotation_spheres)
+			rotation_y_sphere += delta_rotation_y / 5.f;
 		if (rotation_x)
 			angle_rotation_x += delta_rotation_y / 12.f;
 	}
@@ -336,8 +344,11 @@ void render_scene()
 			glColor3f((float)(i / (float)nb), (float)(1. - i / (float)nb), 0.);
 		
 		glPushMatrix();
-		glRotatef(sens * rotation_y_sphere, 0., 1., 0.);
-		glTranslatef(x, 0., 0.);
+		if (rotation_spheres)
+		{
+			glRotatef(sens * rotation_y_sphere, 0., 1., 0.);
+			glTranslatef(x, 0., 0.);
+		}
 		
 		if (spheres)
 		{
@@ -399,9 +410,11 @@ void render_scene()
 
 		glRotatef(angle_sphere, 0., 1., 0.);
 		glPushMatrix(); 
-
-		glRotatef(sens_sphere * rotation_y_sphere, 0., 1., 0.);
-		glTranslatef(x_light, 0., 0.);
+		if (rotation_spheres)
+		{
+			glRotatef(sens_sphere * rotation_y_sphere, 0., 1., 0.);
+			glTranslatef(x_light, 0., 0.);
+		}
 
 		// Spheres
 		glPushMatrix();
@@ -473,6 +486,7 @@ void printCommandes()
 	printf(" K : changer de type d'objet (teapot / sphere)\n");
 	printf(" L : activer / desactiver le lighting\n");
 	printf(" M : activer / desactiver la rotation des spheres\n");
+	printf(" B : activer / desactiver la rotation des planetes\n");
 	printf(" N : activer / desactiver la rotation sur Z\n");
 	printf(" Espace : augmenter l'angle de rotation des objets de 10 degres\n");
 	printf(" R : reset\n");

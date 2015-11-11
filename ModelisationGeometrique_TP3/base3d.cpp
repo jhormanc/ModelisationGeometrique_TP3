@@ -36,13 +36,14 @@ GLfloat qaLightDirection[] = { 1, 1, 1, 0 }; // Directional Light
 
 const int nb_teapots = 5;
 float teta = 50.;
-bool solid = true;
-float rotation_y = 0.;
+float rotation_y = 0., rotation_y_sphere = 0., angle_rotation_x = 0.;
 float delta_rotation_y = 0.4;
+bool solid = true;
 bool lighting = true;
 bool move = false;
 bool spheres = false;
-float tabSphere[nb_teapots][4]; // delta x, y, rotation y et sens de rotation
+bool rotation_x = false;
+float tabSphere[nb_teapots][6]; // delta x, y, rotation y, sens de rotation, distance et sens planete
 
 // Méthodes
 void init_scene();
@@ -53,7 +54,7 @@ GLvoid window_reshape(GLsizei width, GLsizei height);
 GLvoid window_key(unsigned char key, int x, int y); 
 GLvoid window_idle();
 void printCommandes();
-float random();
+float random(const float min, const float max);
 void initTabSpheres();
 //float sum(const int i);
 
@@ -201,6 +202,12 @@ GLvoid window_key(unsigned char key, int x, int y)
 	case 'M':
 		move = !move;
 		break;
+	case 'n':
+	case 'N':
+		rotation_x = !rotation_x;
+		if (rotation_x == false)
+			angle_rotation_x = 0.;
+		break;
 	case 'p':
 	case 'P':
 		solid = !solid;
@@ -210,13 +217,15 @@ GLvoid window_key(unsigned char key, int x, int y)
 		if (spheres)
 		{
 			initTabSpheres();
-			delta_rotation_y = 0.03;
+			angle_rotation_x = 0.;
+			rotation_y_sphere = 0.;
 		}
 		else
 		{
-			delta_rotation_y = 0.4;
 			move = false;
 			rotation_y = 0.;
+			rotation_y_sphere = 0.;
+			angle_rotation_x = 0.;
 		}
 		break;
 	case 'i':
@@ -258,10 +267,21 @@ GLvoid window_key(unsigned char key, int x, int y)
 GLvoid window_idle() 
 {  
 	if (move)
+	{
 		rotation_y += delta_rotation_y;
+		rotation_y_sphere += delta_rotation_y / 5.f;
+		if (rotation_x)
+			angle_rotation_x += delta_rotation_y / 12.f;
+	}
 
 	if (rotation_y > 360.)
 		rotation_y = 0.;
+
+	if (rotation_y_sphere > 360.)
+		rotation_y_sphere = 0.;
+
+	if (angle_rotation_x > 360.)
+		angle_rotation_x = 0.;
 
 	glutPostRedisplay();
 }
@@ -272,25 +292,39 @@ void render_scene()
 	const int nb = nb_teapots;
 	float angle = 0.;
 	float y = 0., x = 0.;
-	float eps_y;
-	float sens;
+	float eps_y, sens, x_light, angle_sphere, sens_sphere;
 
 	glMatrixMode(GL_MODELVIEW);
-
+	
 	// Description de la scene
 	glLoadIdentity();
 
 	glPushMatrix();
 
 	// Teapots - Spheres
-	glTranslatef(2., -8., 0.);
+	glTranslatef(4., -10., 0.);
 	glRotatef(20., 0., 0., 1.);
+	if (rotation_x)
+		glRotatef(angle_rotation_x, 1., 0., 1.);
+
 	for (int i = nb_teapots; i >= 1; i--)
 	{
 		angle = (float)((nb - i) * teta);
 		y = (float)(i + i / 1.9);
 
+		if (spheres)
+		{
+			x = tabSphere[i - 1][4];
+			sens = tabSphere[i - 1][5];
+		}
+		else
+		{
+			x = (float)(std::abs(i - nb) * 1.5);
+			sens = 1.;
+		}
+
 		glRotatef(angle, 0., 1., 0.);
+
 		if (lighting)
 		{
 			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, new GLfloat[] { (float)(i / (float)nb), (float)(1. - i / (float)nb), 0., 1. }); // (float)((nb - i) / (float)nb)
@@ -300,7 +334,11 @@ void render_scene()
 		}
 		else
 			glColor3f((float)(i / (float)nb), (float)(1. - i / (float)nb), 0.);
-
+		
+		glPushMatrix();
+		glRotatef(sens * rotation_y_sphere, 0., 1., 0.);
+		glTranslatef(x, 0., 0.);
+		
 		if (spheres)
 		{
 			if (solid)
@@ -315,7 +353,11 @@ void render_scene()
 			else
 				glutWireTeapot(i);
 		}
+		glPopMatrix();
+		
+
 		glTranslatef(0., y, 0.);
+		
 	}
 
 	glPopMatrix();
@@ -326,31 +368,46 @@ void render_scene()
 	glPushMatrix();
 
 	// Lights
-	glTranslatef(2., -8., 0.);
+	glTranslatef(4., -10., 0.);
 	glRotatef(20., 0., 0., 1.);
+
+	if (rotation_x)
+		glRotatef(angle_rotation_x, 1., 0., 1.);
 
 	for (int i = nb; i >= 1; i--)
 	{
+		angle_sphere = (float)((nb - i) * teta);
+
 		if (spheres)
 		{
 			x = tabSphere[i - 1][0];
 			eps_y = tabSphere[i - 1][1];
 			angle = tabSphere[i - 1][2];
 			sens = tabSphere[i - 1][3];
+			x_light = tabSphere[i - 1][4];
+			sens_sphere = tabSphere[i - 1][5];
 		}
 		else
 		{
 			x = (float)(i + i / 1.9);
-			eps_y = (float)i * 0.66;
+			eps_y = (float)i * 0.66f;
 			angle += (float)((nb - i) * teta);
 			sens = 1.;
+			x_light = (float)(std::abs(i - nb) * 1.5);
+			sens_sphere = 1.;
 		}
 
-		glPushMatrix();
+		glRotatef(angle_sphere, 0., 1., 0.);
+		glPushMatrix(); 
+
+		glRotatef(sens_sphere * rotation_y_sphere, 0., 1., 0.);
+		glTranslatef(x_light, 0., 0.);
 
 		// Spheres
+		glPushMatrix();
+		
 		glTranslatef(0., y + eps_y, 0.);
-		glRotatef(angle + sens * rotation_y, 0., 1., 0.);
+		glRotatef(sens * rotation_y, 0., 1., 0.);
 		glTranslatef(x, 0., 0.);
 
 		if (lighting)
@@ -368,14 +425,13 @@ void render_scene()
 		
 		glPopMatrix();
 
-
 		// Light
 		if (lighting)
 		{
 			glPushMatrix();
 
 			glTranslatef(0., y + eps_y, 0.);
-			glRotatef(angle + sens * rotation_y, 0., 1., 0.);
+			glRotatef(sens * rotation_y, 0., 1., 0.);
 			glTranslatef(x, 0., 0.);
 
 			switch (i)
@@ -402,6 +458,8 @@ void render_scene()
 		}
 
 		y += (float)(i + i / 1.9); 
+
+		glPopMatrix();
 	}
 
 	glPopMatrix();
@@ -410,11 +468,12 @@ void render_scene()
 void printCommandes()
 {
 	printf("=== Commandes ===\n\n");
-	printf(" L : activer / desactiver le lighting\n");
-	printf(" M : activer / desactiver la rotation des spheres\n");
 	printf(" I / O : diminuer / augmenter la vitesse de rotation des spheres\n");
 	printf(" P : changer de type d'affichage (Solid / Wire)\n");
 	printf(" K : changer de type d'objet (teapot / sphere)\n");
+	printf(" L : activer / desactiver le lighting\n");
+	printf(" M : activer / desactiver la rotation des spheres\n");
+	printf(" N : activer / desactiver la rotation sur Z\n");
 	printf(" Espace : augmenter l'angle de rotation des objets de 10 degres\n");
 	printf(" R : reset\n");
 	printf(" Echap : quitter\n");
@@ -433,5 +492,7 @@ void initTabSpheres()
 		tabSphere[i - 1][1] = random(-0.9, 0.9) * i * 0.8;
 		tabSphere[i - 1][2] = random(-1., 1.) * 180.;
 		tabSphere[i - 1][3] = random(-1., 1.) >= 0 ? 1. : -1;
+		tabSphere[i - 1][4] = (i == nb_teapots ? 0. : random(2., (float)(std::abs(i - nb_teapots) + 1.)) * 2.);
+		tabSphere[i - 1][5] = random(-1., 1.) >= 0 ? 1. : -1;
 	}
 }
